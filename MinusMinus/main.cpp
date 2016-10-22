@@ -2,14 +2,20 @@
 //  main.cpp
 //  MinusMinus
 //
-//  Created by Miro Markarian on 10/22/16.
-//  Copyright © 2016 GCC. All rights reserved.
+//  Created by Tony Biehl on 8/15/16.
+//  Copyright © 2016 Tony Biehl. All rights reserved.
 //
 
 #include <iostream>
+#include "Interpret.h"
 
-int main(int argc, const char * argv[]) {
-    // insert code here...
-    std::cout << "Hello, World!\n";
+using namespace std;
+
+int main() {
+    Interpret prog;
+    string file;
+    cout << "Program name? ";
+    getline(cin, file);
+    prog.start(file);
     return 0;
 }
