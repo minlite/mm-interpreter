@@ -104,23 +104,208 @@ int Interpret::valueToken(string token, SymbolTable& local) {
 bool Interpret::execute(int numParmsVars, SymbolTable& table) {
     int parmOffset = 0; // parms actually start at 1 for stack frame, return value is at 0
     bool success = true;
+    int countParms = 0;
+    int retValIndex = stk.getStackSize() - numParmsVars - 1;
+    string temp = lines[lineNum];
+    string token;
+    Symbol v;
+    token = nextToken(temp, false); // get from header the function name
     
-    //**********************************************************************
-    //  Put in your code to interpret the MinusMinus language
-    //  Don't forget to be recursive when calling other MinusMinus functions
-    //**********************************************************************
-    
-//    Symbol main;
-//    main.symbol = "main";
-//    
-//    if(table.get(main)) {
-//        
-//    }
-    
+    cout<<"Return val index at "<<retValIndex<<endl;
+    if (nextToken(temp, false) == "(")
+    {
+        token = nextToken(temp, false);
+        while (token != "" && token != ")")
+        {
+            countParms++;
+            if (validID(token)) {
+                v.symbol = token;
+                v.offset = retValIndex + countParms;
+                cout<<"Added "<< v.symbol << " at "<<v.offset<<endl;
+                table.add(v);
+            }
+            else
+                errorMsg("Parameter not a valid ID");
+            token = nextToken(temp, false);
+        }
+    }
+    else
+        errorMsg("Bad function header");
+    if (token != ")")
+        errorMsg("Missing ending ')'");
+    if (countParms != numParmsVars)
+        errorMsg("Number of arguments do not match number of parameters");
+    lineNum++;
+    while (errorCount == 0 && lineNum < size)
+    { // interpret the line
+        temp = lines[lineNum]; // get the line
+        token = nextToken(temp, false);
+        if (token == "declare")
+        {
+            string var = nextToken(temp, false);
+            while (var != "") {
+                Symbol symbol;
+                symbol.symbol = var;
+                symbol.offset = stk.getStackSize();
+                table.add(symbol);
+                
+                stk.push(0);
+                
+                var = nextToken(temp, false);
+            }
+        }
+        else if (token == "if")
+        {
+        }
+        else if (token == "endif")
+        {
+        }
+        else if (token == "while")
+        {
+        }
+        else if (token == "endwhile")
+        {
+        }
+        else if (token == "input")
+        {
+        }
+        else if (token == "print" || token == "println")
+        {
+            bool newline = (token == "println");
+            token = nextToken(temp, false);
+            while (token != "")
+            {
+                if (token[0] == '\"')
+                {
+                    printString(token);
+                } else {
+                    Symbol f;
+                    f.symbol = token;
+                    if(table.get(f)) {
+                        bool success = true;
+                        cout<<stk.peek(f.offset, success);
+                        if(!success)
+                            errorMsg("Undefined variable.");
+                    } else {
+                        errorMsg("Undefined variable.");
+                    }
+                } 
+                
+                token = nextToken(temp, false);
+            } 
+            
+            if (newline) {
+                cout << endl;
+            }
+        }
+        else if (token == "return")
+        {
+            string tempOrig = temp;
+            string token = nextToken(temp, false);
+            int val = 0;
+            if(isalpha(token[0])) {
+                // Check if defined
+                cout<<"Treating "<<token<<" as a variable"<<endl;
+                Symbol f;
+                f.symbol = token;
+                if(table.get(f)) {
+                    bool success = true;
+                    val = stk.peek(f.offset, success);
+                    if(!success) {
+                        errorMsg("Undefined return variable.");
+                    }
+                } else {
+                    errorMsg("Undefined return variable.");
+                }
+            } else {
+                // Expression
+                cout<<"Treating "<<tempOrig<<" as an expression"<<endl;
+                bool success = true;
+                val = equation(tempOrig, table, success);
+                cout<<"Result is " <<val<<endl;
+                if (!success)
+                    errorMsg("Bad equation");
+            }
+            while (stk.getStackSize() != retValIndex + 1)
+                stk.pop();
+            stk.poke(retValIndex, val);
+            return true;
+        }
+        else if (token == "rem")
+        {
+        }
+        else if (validID(token))
+        { // assignment
+            v.symbol = token;
+            if (table.get(v))
+            { // valid identifier
+                int dest = v.offset;
+                token = nextToken(temp, false);
+                if (token == ":=")
+                { // assign
+                    string temp2 = temp;
+                    token = nextToken(temp2, false);
+                    string token2 = nextToken(temp2, false);
+                    if (validID(token) && token2 == "(")
+                    { // function call
+                        Symbol f;
+                        f.symbol = nextToken(temp, false);
+                        if (validID(f.symbol) && functions.get(f))
+                        { // valid function
+                            int oldLineNum = lineNum;
+                            SymbolTable local; // calling routine must create a symboltable to pass
+                            stk.push(0); // and create a return value
+                            token = nextToken(temp, false); // get the "("
+
+                            token = nextToken(temp, false);
+                            while (token != "" && token != ")")
+                            {
+                                countParms++;
+                                if (validID(token)) {
+                                    cout<<"Token is: "<<token<<endl;
+                                    cout<<"Stack size is: " <<stk.getStackSize()<<endl;
+                                    stk.push(valueToken(token, table));
+                                }
+                                else
+                                    errorMsg("Parameter not a valid ID");
+                                token = nextToken(temp, false);
+                            }
+
+                            lineNum = f.offset;
+                            execute(countParms, local);
+                            bool success = true;
+                            int result = stk.peek(stk.getStackSize() - 1, success);
+                            cout<<"Result is " <<result<<endl;
+                            stk.poke(dest, result);
+                            
+                            lineNum = oldLineNum;
+                        }
+                        else
+                            errorMsg("Function " + f.symbol + " not found");
+                    }
+                    else
+                    { // expression
+                        bool success = true;
+                        int result = equation(temp, table, success);
+                        cout<<"Result is " <<result<<endl;
+                        stk.poke(dest, result);
+                        if (!success)
+                            errorMsg("Bad equation");
+                    }
+                }
+                else
+                    errorMsg("Missing assignment operator");
+            }
+            else
+                errorMsg("Assignment variable not found");
+        }
+        else
+            errorMsg("Unrecognized command");
+        lineNum++;
+    }
     
     stk.pop(parmOffset); // remove the parameters
     return success;
-    
 }
 
 //** nextToken
@@ -258,43 +443,50 @@ void Interpret::printString(string s) {
 //   Note: this function will use precedence, nextToken, and a temporary operator stack
 //         that follows a infix to postfix algorithm
 int Interpret::equation(string exp, SymbolTable& local, bool& success){
+//    cout<<"Expression: "<<exp<<endl;
     Stack<string> postFix;
     Stack<string> operatorStack;
     
-    string postfixExp = "";
-    
-    for (int i=0; i < exp.length(); i++)
+    string token = nextToken(exp, false);
+    while (token != "")
     {
-        string ch;
-        ch.push_back(exp[i]);
         
-        if(!isOperator(ch)) {
-            postfixExp = postfixExp + ch;
-        } else if(exp[i] == '(') {
-            operatorStack.push(ch);
-        } else if (isOperator(ch)) {
+        if(!isOperator(token)) {
+            if(token == "-") {
+                string token2 = nextToken(exp, false);
+                
+                if(!isOperator(token2))
+                    token += token2;
+                else
+                    errorMsg("Invalid Expression");
+            }
+            postFix.push(token);
+        } else if(token == "(") {
+            operatorStack.push(token);
+        } else if (isOperator(token)) {
             while (operatorStack.getStackSize() != 0 && operatorStack.peek() != "(" &&
-                   precedence(ch) <= precedence(operatorStack.peek()))
+                   precedence(token) <= precedence(operatorStack.peek()))
             {
-                postfixExp += operatorStack.peek();
+                postFix.push(operatorStack.peek());
                 operatorStack.pop();
             }
-            operatorStack.push(ch);   // save the operator
-        } else if(exp[i] == ')') {
+            operatorStack.push(token);   // save the operator
+        } else if(token == ")") {
             while (operatorStack.getStackSize() != 0 && operatorStack.peek() != "(")
             {
-                postfixExp += operatorStack.peek();
+                postFix.push(operatorStack.peek());
                 operatorStack.pop();
             }
             operatorStack.pop() ;    // remove open parenthesis
             
         }
+        token = nextToken(exp, false);
     }
     
     // append to postfixExp the operators remaining in the stack
     while (operatorStack.getStackSize() != 0)
     {
-        postfixExp += operatorStack.peek();
+        postFix.push(operatorStack.peek());
         operatorStack.pop();
     }
     
