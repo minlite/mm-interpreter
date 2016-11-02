@@ -11,7 +11,7 @@
 
 using namespace std;
 
-//** specialChar
+///** specialChar
 // Check if special character delimiter of '(', ')', '=', '>', '<', or ':'
 bool Interpret::specialChar(char ch){
     return ch == '(' || ch == ')' || ch == ',' ||              // call or def
@@ -256,29 +256,38 @@ bool Interpret::execute(int numParmsVars, SymbolTable& table) {
                             SymbolTable local; // calling routine must create a symboltable to pass
                             stk.push(0); // and create a return value
                             token = nextToken(temp, false); // get the "("
-
-                            token = nextToken(temp, false);
-                            while (token != "" && token != ")")
-                            {
-                                countParms++;
-                                if (validID(token)) {
-                                    cout<<"Token is: "<<token<<endl;
-                                    cout<<"Stack size is: " <<stk.getStackSize()<<endl;
-                                    stk.push(valueToken(token, table));
+                            if(temp[temp.length() - 1] == ')') {
+                                temp = temp.substr(0, temp.length() - 1);
+                                token = nextToken(temp, true);
+                                int count = 0;
+                                int result;
+                                bool success = true;
+                                string lastToken = "";
+                                while (token != "")
+                                {
+                                    if (token != ",") {
+                                        cout<<"Token is: "<<token<<endl;
+                                        cout<<"Stack size is: " <<stk.getStackSize()<<endl;
+                                        count++;
+                                        result = equation(token, local, success);
+                                        stk.push(result);
+                                    } else if (token == token2) {
+                                        errorMsg("Two commas next to each other");
+                                    }
+                                    else
+                                        errorMsg("Parameter not a valid ID");
+                                    lastToken = token;
+                                    token = nextToken(temp, true);
                                 }
-                                else
-                                    errorMsg("Parameter not a valid ID");
-                                token = nextToken(temp, false);
+                                
+                                lineNum = f.offset;
+                                execute(count, local);
+                                result = stk.peek(stk.getStackSize() - 1, success);
+                                cout<<"Result is " <<result<<endl;
+                                stk.poke(dest, result);
+                                
+                                lineNum = oldLineNum;
                             }
-
-                            lineNum = f.offset;
-                            execute(countParms, local);
-                            bool success = true;
-                            int result = stk.peek(stk.getStackSize() - 1, success);
-                            cout<<"Result is " <<result<<endl;
-                            stk.poke(dest, result);
-                            
-                            lineNum = oldLineNum;
                         }
                         else
                             errorMsg("Function " + f.symbol + " not found");
@@ -312,7 +321,7 @@ bool Interpret::execute(int numParmsVars, SymbolTable& table) {
 // Chop off the first part of the string that:
 //    1) ends with white space or () special character
 //    2) ends with "
-//    3) or if comma flag on, ends with a () or comma
+//    3) or if comma flag on, skip whitespace and ends with a comma
 string Interpret::nextToken(string& line, bool comma){
     string token = "";
     char ch;
@@ -335,12 +344,20 @@ string Interpret::nextToken(string& line, bool comma){
             token += ch;
             x++; // move to next character
         }
-        else if (comma && (ch == '(' || ch == ')' || ch == ',')) { // tack on without white space
-            if (token == "") { // delimiter by itself?
-                token += ch; // yes, return the delimiter by itself
+        else if (comma) {
+            if (ch == ' ' || ch == '\t') // skip white space
+                x++;
+            else if (ch == ',') { // tack on without white space
+                if (token == "") { // delimiter by itself?
+                    token += ch; // yes, return the delimiter by itself
+                    x++;
+                }
+                notDelimit = false; // exit
+            }
+            else {
+                token += ch;
                 x++;
             }
-            notDelimit = false; // exit
         }
         else if (ch == ' ' || ch == '\t' || specialChar(ch)) { // check for delimiter
             if (specialChar(ch)) { // special token
