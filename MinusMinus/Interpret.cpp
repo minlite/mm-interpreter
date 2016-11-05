@@ -7,7 +7,8 @@
 //
 
 #include "Interpret.h"
-#include <string>
+#include <stdio.h>
+#include <ctype.h>
 #include <fstream>
 
 using namespace std;
@@ -115,17 +116,18 @@ bool Interpret::execute(int numParmsVars, SymbolTable& table) {
     cout<<"Return val index at "<<retValIndex<<endl;
     if (nextToken(temp, false) == "(")
     {
-        token = nextToken(temp, false);
+        token = nextToken(temp, true);
         while (token != "" && token != ")")
         {
-            countParms++;
+
             if (validID(token)) {
+                countParms++;
                 v.symbol = token;
                 v.offset = retValIndex + countParms;
                 cout<<"Added "<< v.symbol << " at "<<v.offset<<endl;
                 table.add(v);
             }
-            else
+            else if (token != "," && token != "")
                 errorMsg("Parameter not a valid ID");
             token = nextToken(temp, false);
         }
@@ -275,8 +277,10 @@ bool Interpret::execute(int numParmsVars, SymbolTable& table) {
                                     } else if (token == token2) {
                                         errorMsg("Two commas next to each other");
                                     }
-                                    else
-                                        errorMsg("Parameter not a valid ID");
+                                    else {
+                                        //errorMsg("Parameter not a valid ID");
+                                    }
+
                                     lastToken = token;
                                     token = nextToken(temp, true);
                                 }
@@ -451,7 +455,7 @@ bool Interpret::errorMsg(string msg) {
 void Interpret::printString(string s) {
     int len = s.length();
     if (len < 2 || s[0] != '\"' || s[len-1] != '\"')
-        errorMsg("Invalid string contant");
+        errorMsg("Invalid string constant");
     else
         cout << s.substr(1, len-2);
 }
@@ -491,7 +495,22 @@ int Interpret::equation(string exp, SymbolTable& local, bool& success){
             }
             operatorStack.pop() ;    // remove open parenthesis
             
-        } else if(!isOperator(token)) {
+        } else if(isalpha(exp[i])) {
+            // Variable.
+            i++;
+            while(exp[i] != ' ' && i < exp.length()) {
+                token += exp[i];
+                i++;
+            }
+
+            if(valueToken(token, local))  {
+                // Token
+                postFix.push(token);
+            }
+
+            i--;
+        }
+        else if(!isOperator(token)) {
             postFix.push(token);
         }
     }
