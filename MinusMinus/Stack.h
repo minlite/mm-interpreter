@@ -46,6 +46,9 @@ public:
     
     // clear the stack;
     void clear();
+
+    // print the stack;
+    void print();
 };
 
 #include "Stack.cpp"

@@ -7,6 +7,7 @@
 //
 
 #include "Stack.h"
+#include <iostream>
 #ifndef Stack_cpp
 #define Stack_cpp
 
@@ -93,7 +94,20 @@ int Stack<T>::getStackSize() {
 template<class T>
 void Stack<T>::clear() {
     size = 0;
+
 }
+
+//** print
+// print the stack for debugging;
+template<class T>
+void Stack<T>::print() {
+    std::cout<<"Stack contents (length: "<<size<<")"<<std::endl;
+
+    for(int i=0; i<size; i++) {
+        std::cout<<"At index "<<i<<": "<<values[i]<<std::endl;
+    }
+}
+
 
 #endif
 

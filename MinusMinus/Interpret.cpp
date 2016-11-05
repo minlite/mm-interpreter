@@ -7,6 +7,7 @@
 //
 
 #include "Interpret.h"
+#include <string>
 #include <fstream>
 
 using namespace std;
@@ -295,6 +296,7 @@ bool Interpret::execute(int numParmsVars, SymbolTable& table) {
                     else
                     { // expression
                         bool success = true;
+                        cout<<"The expression is: "<<temp<<endl;
                         int result = equation(temp, table, success);
                         cout<<"Result is " <<result<<endl;
                         stk.poke(dest, result);
@@ -460,24 +462,17 @@ void Interpret::printString(string s) {
 //   Note: this function will use precedence, nextToken, and a temporary operator stack
 //         that follows a infix to postfix algorithm
 int Interpret::equation(string exp, SymbolTable& local, bool& success){
-//    cout<<"Expression: "<<exp<<endl;
     Stack<string> postFix;
     Stack<string> operatorStack;
     
-    string token = nextToken(exp, false);
-    while (token != "")
+    //string token = nextToken(exp, false);
+    for (int i=0; i<exp.length(); i++)
     {
-        
-        if(!isOperator(token)) {
-            if(token == "-") {
-                string token2 = nextToken(exp, false);
-                
-                if(!isOperator(token2))
-                    token += token2;
-                else
-                    errorMsg("Invalid Expression");
-            }
-            postFix.push(token);
+        string token = "";
+        token += exp[i];
+
+        if(token == "" || token == " ") {
+            continue;
         } else if(token == "(") {
             operatorStack.push(token);
         } else if (isOperator(token)) {
@@ -496,8 +491,9 @@ int Interpret::equation(string exp, SymbolTable& local, bool& success){
             }
             operatorStack.pop() ;    // remove open parenthesis
             
+        } else if(!isOperator(token)) {
+            postFix.push(token);
         }
-        token = nextToken(exp, false);
     }
     
     // append to postfixExp the operators remaining in the stack

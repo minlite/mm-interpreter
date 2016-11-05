@@ -28,7 +28,7 @@
 /* Begin PBXFileReference section */
 		1BAE725B1DBBD59D00D4D9A5 /* MinusMinus */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.executable"; includeInIndex = 0; path = MinusMinus; sourceTree = BUILT_PRODUCTS_DIR; };
 		1BAE725E1DBBD59D00D4D9A5 /* main.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = main.cpp; sourceTree = "<group>"; };
-		1BAE72651DBBD5B800D4D9A5 /* Interpret.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = Interpret.cpp; sourceTree = "<group>"; };
+		1BAE72651DBBD5B800D4D9A5 /* Interpret.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = Interpret.cpp; sourceTree = "<group>"; usesTabs = 0; };
 		1BAE72661DBBD5B800D4D9A5 /* Interpret.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = Interpret.h; sourceTree = "<group>"; };
 		1BAE72671DBBD5B800D4D9A5 /* Stack.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = Stack.cpp; sourceTree = "<group>"; };
 		1BAE72681DBBD5B800D4D9A5 /* Stack.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = Stack.h; sourceTree = "<group>"; };
