@@ -7,8 +7,6 @@
 //
 
 #include "Interpret.h"
-#include <stdio.h>
-#include <ctype.h>
 #include <fstream>
 
 using namespace std;
@@ -107,6 +105,7 @@ bool Interpret::execute(int numParmsVars, SymbolTable& table) {
     int parmOffset = 0; // parms actually start at 1 for stack frame, return value is at 0
     bool success = true;
     int countParms = 0;
+    int countIfs = 0;
     int retValIndex = stk.getStackSize() - numParmsVars - 1;
     string temp = lines[lineNum];
     string token;
@@ -159,9 +158,33 @@ bool Interpret::execute(int numParmsVars, SymbolTable& table) {
         }
         else if (token == "if")
         {
+            if (!compare(temp, table))
+            {
+                int countTheIf = 1;
+                lineNum++;
+                temp = lines[lineNum];
+                temp = nextToken(temp, false);
+                while (lineNum < size && temp != "endif" && countTheIf > 0)
+                {
+                    temp = lines[lineNum];
+                    lineNum++;
+                    temp = nextToken(temp, false);
+                    if (temp == "if")
+                        countTheIf++;
+                    else if (temp == "endif")
+                        countTheIf--;
+                }
+                if (lineNum == size || countTheIf > 0)
+                    errorMsg("No matching endif");
+            }
+            else countIfs++;
         }
         else if (token == "endif")
         {
+            if (countIfs == 0)
+                errorMsg("endif without matching if");
+            else
+                countIfs--;
         }
         else if (token == "while")
         {
@@ -171,6 +194,22 @@ bool Interpret::execute(int numParmsVars, SymbolTable& table) {
         }
         else if (token == "input")
         {
+            token = nextToken(temp, false);
+            if (token == "")
+                errorMsg("Empty Input statement");
+            else if (token[0] == '\"')
+            {
+                printString(token);
+                token = nextToken(temp, false);
+            }
+            v.symbol = token;
+            if (table.get(v)) {
+                int num;
+                cin >> num;
+                stk.poke(v.offset, num);
+            }
+            else
+                errorMsg("Input variable " + v.symbol + " not found");
         }
         else if (token == "print" || token == "println")
         {
@@ -272,7 +311,7 @@ bool Interpret::execute(int numParmsVars, SymbolTable& table) {
                                         cout<<"Token is: "<<token<<endl;
                                         cout<<"Stack size is: " <<stk.getStackSize()<<endl;
                                         count++;
-                                        result = equation(token, local, success);
+                                        result = equation(token, table, success);
                                         stk.push(result);
                                     } else if (token == token2) {
                                         errorMsg("Two commas next to each other");
