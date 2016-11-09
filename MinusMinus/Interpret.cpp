@@ -106,6 +106,8 @@ bool Interpret::execute(int numParmsVars, SymbolTable& table) {
     bool success = true;
     int countParms = 0;
     int countIfs = 0;
+    int countWhiles = 0;
+    Stack<int> whileLineNumStack;
     int retValIndex = stk.getStackSize() - numParmsVars - 1;
     string temp = lines[lineNum];
     string token;
@@ -194,9 +196,42 @@ bool Interpret::execute(int numParmsVars, SymbolTable& table) {
         }
         else if (token == "while")
         {
+            if (!compare(temp, table))
+            {
+                int countTheWhile = 1;
+                lineNum++;
+                temp = lines[lineNum];
+                temp = nextToken(temp, false);
+                while (lineNum < size && temp != "endwhile" && countTheWhile > 0)
+                {
+                    temp = lines[lineNum];
+                    lineNum++;
+                    temp = nextToken(temp, false);
+                    if (temp == "while")
+                        countTheWhile++;
+                    else if (temp == "endwhile")
+                        countTheWhile--;
+                }
+                lineNum--;
+                if (lineNum == size || countTheWhile > 0)
+                    errorMsg("No matching endwhile");
+            }
+            else {
+                countWhiles++;
+                whileLineNumStack.push(lineNum);
+            }
         }
         else if (token == "endwhile")
         {
+            if (countWhiles == 0)
+                errorMsg("endwhile without matching while");
+            else {
+                countWhiles--;
+                // Jump back to the start of current while to re-evaluate
+                lineNum = whileLineNumStack.peek() - 1;
+                whileLineNumStack.pop();
+            }
+
         }
         else if (token == "input")
         {
