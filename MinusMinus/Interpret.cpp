@@ -119,6 +119,12 @@ bool Interpret::execute(int numParmsVars, SymbolTable& table) {
         while (token != "" && token != ")")
         {
 
+            if(token.length() > 1 && token[token.length()-1] == ')') {
+                token = token.substr(0, token.length()-1);
+                temp = ')' + temp;
+            }
+
+
             if (validID(token)) {
                 countParms++;
                 v.symbol = token;
