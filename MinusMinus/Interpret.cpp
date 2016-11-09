@@ -32,6 +32,15 @@ bool Interpret::validID(string id) {
     return valid;
 }
 
+
+bool Interpret::validVar(string token, SymbolTable local) {
+    Symbol temp;
+    temp.symbol = token; // look up variable
+
+    return local.get(temp); // valid local variable
+
+}
+
 //** compare
 // take two values, use the SymbolTable to look up locals, and return true or false
 bool Interpret::compare(string &line, SymbolTable& local){
@@ -317,7 +326,7 @@ bool Interpret::execute(int numParmsVars, SymbolTable& table) {
         else if (token == "rem")
         {
         }
-        else if (validID(token))
+        else if (validID(token) && token != "")
         { // assignment
             v.symbol = token;
             if (table.get(v))
@@ -393,6 +402,10 @@ bool Interpret::execute(int numParmsVars, SymbolTable& table) {
             }
             else
                 errorMsg("Assignment variable not found");
+        }
+        else if(token == "") {
+            // Do nothing
+            // Blank line
         }
         else
             errorMsg("Unrecognized command");
@@ -548,13 +561,12 @@ void Interpret::printString(string s) {
 int Interpret::equation(string exp, SymbolTable& local, bool& success){
     Stack<string> postFix;
     Stack<string> operatorStack;
-    
-    //string token = nextToken(exp, false);
-    for (int i=0; i<exp.length(); i++)
-    {
-        string token = "";
-        token += exp[i];
 
+    string token = nextToken(exp, false);
+    //for (int i=0; i<exp.length(); i++)
+
+    while(token != "")
+    {
         if(token == "" || token == " ") {
             continue;
         } else if(token == "(") {
@@ -575,24 +587,18 @@ int Interpret::equation(string exp, SymbolTable& local, bool& success){
             }
             operatorStack.pop() ;    // remove open parenthesis
             
-        } else if(isalpha(exp[i])) {
+        } else if(isalpha(token[0])) {
             // Variable.
-            i++;
-            while(exp[i] != ' ' && i < exp.length()) {
-                token += exp[i];
-                i++;
-            }
-
-            if(valueToken(token, local))  {
+            if(validVar(token, local))  {
                 // Token
                 postFix.push(token);
             }
-
-            i--;
         }
         else if(!isOperator(token)) {
             postFix.push(token);
         }
+
+        token = nextToken(exp, false);
     }
     
     // append to postfixExp the operators remaining in the stack
@@ -601,8 +607,8 @@ int Interpret::equation(string exp, SymbolTable& local, bool& success){
         postFix.push(operatorStack.peek());
         operatorStack.pop();
     }
-    
-    
+
+
     return calculate(postFix, local, success);
 }
 

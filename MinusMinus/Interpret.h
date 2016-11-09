@@ -44,6 +44,8 @@ private:
     
     // check for valid identifier
     bool validID(string);
+
+    bool validVar(string token, SymbolTable local);
     
     // take parse compare, use the SymbolTable to look up locals, and return true or false
     bool compare(string &, SymbolTable&);
