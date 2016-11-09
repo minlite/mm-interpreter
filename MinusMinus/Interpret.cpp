@@ -124,7 +124,6 @@ bool Interpret::execute(int numParmsVars, SymbolTable& table) {
                 temp = ')' + temp;
             }
 
-
             if (validID(token)) {
                 countParms++;
                 v.symbol = token;
@@ -180,6 +179,7 @@ bool Interpret::execute(int numParmsVars, SymbolTable& table) {
                     else if (temp == "endif")
                         countTheIf--;
                 }
+                lineNum--;
                 if (lineNum == size || countTheIf > 0)
                     errorMsg("No matching endif");
             }
