@@ -123,7 +123,7 @@ bool Interpret::execute(int numParmsVars, SymbolTable& table) {
     Symbol v;
     token = nextToken(temp, false); // get from header the function name
     
-    cout<<"Return val index at "<<retValIndex<<endl;
+    //cout<<"Return val index at "<<retValIndex<<endl;
     if (nextToken(temp, false) == "(")
     {
         token = nextToken(temp, true);
@@ -139,7 +139,7 @@ bool Interpret::execute(int numParmsVars, SymbolTable& table) {
                 countParms++;
                 v.symbol = token;
                 v.offset = retValIndex + countParms;
-                cout<<"Added "<< v.symbol << " at "<<v.offset<<endl;
+                //cout<<"Added "<< v.symbol << " at "<<v.offset<<endl;
                 table.add(v);
             }
             else if (token != "," && token != "")
@@ -297,7 +297,7 @@ bool Interpret::execute(int numParmsVars, SymbolTable& table) {
             int val = 0;
             if(isalpha(token[0])) {
                 // Check if defined
-                cout<<"Treating "<<token<<" as a variable"<<endl;
+                //cout<<"Treating "<<token<<" as a variable"<<endl;
                 Symbol f;
                 f.symbol = token;
                 if(table.get(f)) {
@@ -311,10 +311,10 @@ bool Interpret::execute(int numParmsVars, SymbolTable& table) {
                 }
             } else {
                 // Expression
-                cout<<"Treating "<<tempOrig<<" as an expression"<<endl;
+                //cout<<"Treating "<<tempOrig<<" as an expression"<<endl;
                 bool success = true;
                 val = equation(tempOrig, table, success);
-                cout<<"Result is " <<val<<endl;
+                //cout<<"Result is " <<val<<endl;
                 if (!success)
                     errorMsg("Bad equation");
             }
@@ -358,8 +358,8 @@ bool Interpret::execute(int numParmsVars, SymbolTable& table) {
                                 while (token != "")
                                 {
                                     if (token != ",") {
-                                        cout<<"Token is: "<<token<<endl;
-                                        cout<<"Stack size is: " <<stk.getStackSize()<<endl;
+                                        //cout<<"Token is: "<<token<<endl;
+                                        //cout<<"Stack size is: " <<stk.getStackSize()<<endl;
                                         count++;
                                         result = equation(token, table, success);
                                         stk.push(result);
@@ -377,7 +377,7 @@ bool Interpret::execute(int numParmsVars, SymbolTable& table) {
                                 lineNum = f.offset;
                                 execute(count, local);
                                 result = stk.peek(stk.getStackSize() - 1, success);
-                                cout<<"Result is " <<result<<endl;
+                                //cout<<"Result is " <<result<<endl;
                                 stk.poke(dest, result);
                                 
                                 lineNum = oldLineNum;
@@ -389,9 +389,9 @@ bool Interpret::execute(int numParmsVars, SymbolTable& table) {
                     else
                     { // expression
                         bool success = true;
-                        cout<<"The expression is: "<<temp<<endl;
+                        //cout<<"The expression is: "<<temp<<endl;
                         int result = equation(temp, table, success);
-                        cout<<"Result is " <<result<<endl;
+                        //cout<<"Result is " <<result<<endl;
                         stk.poke(dest, result);
                         if (!success)
                             errorMsg("Bad equation");
@@ -521,7 +521,7 @@ void Interpret::start(string fileName){
                 newFunction.symbol = function;
                 newFunction.offset = size;
                 functions.add(newFunction);
-                cout << "Added function " << function << " offset " << newFunction.offset << endl;
+                //cout << "Added function " << function << " offset " << newFunction.offset << endl;
             }
         }
         size++; // bump size for next line
@@ -563,6 +563,8 @@ int Interpret::equation(string exp, SymbolTable& local, bool& success){
     Stack<string> operatorStack;
 
     string token = nextToken(exp, false);
+    string lastToken = "";
+    bool shouldNegate = false;
     //for (int i=0; i<exp.length(); i++)
 
     while(token != "")
@@ -572,13 +574,20 @@ int Interpret::equation(string exp, SymbolTable& local, bool& success){
         } else if(token == "(") {
             operatorStack.push(token);
         } else if (isOperator(token)) {
-            while (operatorStack.getStackSize() != 0 && operatorStack.peek() != "(" &&
-                   precedence(token) <= precedence(operatorStack.peek()))
-            {
-                postFix.push(operatorStack.peek());
-                operatorStack.pop();
+            // Determine whether the negative sign is a part of the number or an operator
+            if(token == "-" && (lastToken == "" || isOperator(lastToken) || lastToken == "(")) {
+                // Negative number
+                shouldNegate = true;
+            } else {
+                // Operator or not negative
+                while (operatorStack.getStackSize() != 0 && operatorStack.peek() != "(" &&
+                       precedence(token) <= precedence(operatorStack.peek()))
+                {
+                    postFix.push(operatorStack.peek());
+                    operatorStack.pop();
+                }
+                operatorStack.push(token);   // save the operator
             }
-            operatorStack.push(token);   // save the operator
         } else if(token == ")") {
             while (operatorStack.getStackSize() != 0 && operatorStack.peek() != "(")
             {
@@ -595,9 +604,16 @@ int Interpret::equation(string exp, SymbolTable& local, bool& success){
             }
         }
         else if(!isOperator(token)) {
-            postFix.push(token);
+            if(shouldNegate) {
+                postFix.push("-" + token);
+                shouldNegate = false;
+            } else {
+                postFix.push(token);
+            }
+
         }
 
+        lastToken = token;
         token = nextToken(exp, false);
     }
     
